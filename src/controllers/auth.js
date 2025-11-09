@@ -150,3 +150,12 @@ export const login = async (req, res) => {
     res.status(500).json({ message: 'Error from Server', error: error.message })
   }
 }
+
+export const changePassword = async (req, res) => {
+  try {
+  } catch (error) {
+    return res.send(500).json({
+      Message: `Error from server ${error.message}`,
+    })
+  }
+}
