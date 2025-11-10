@@ -19,15 +19,7 @@ export const hirer_register = async (req, res) => {
       })
     }
 
-    const emailExist = await User.findOne({ email })
-
-    if (emailExist) {
-      return res.status(400).json({
-        Message: 'User Already Exist',
-      })
-    }
-
-    const hashPWD = await bcrypt.hash(password, 10)
+    const hashPWD = await bcrypt.hash(password, 7)
     const role = 'hirer'
     const createUser = new User({
       fullName,
@@ -42,12 +34,12 @@ export const hirer_register = async (req, res) => {
 
     createUser.password = undefined
 
-    await sendVerificationEmail(email, fullName)
-
-    return res.status(201).json({
+    res.status(201).json({
       message: 'User registered successfully. Verification code sent to email.',
       User: createUser,
     })
+
+    sendVerificationEmail(email, fullName).catch(console.error)
   } catch (error) {
     if (error.code === 11000) {
       const field = Object.keys(error.keyValue)[0]
@@ -69,22 +61,13 @@ export const worker_register = async (req, res) => {
         Message: 'All field is required',
       })
     }
-
-    if (phone.lenght !== 10) {
+    if (phone.length !== 10) {
       return res.status(400).json({
         Message: 'Phone must be exactly 10 digits',
       })
     }
 
-    const emailExist = await User.findOne({ email })
-
-    if (emailExist) {
-      return res.status(400).json({
-        Message: 'User Already Exist',
-      })
-    }
-
-    const hashPWD = await bcrypt.hash(password, 10)
+    const hashPWD = await bcrypt.hash(password, 7)
     const role = 'worker'
     const createUser = new User({
       fullName,
@@ -99,12 +82,12 @@ export const worker_register = async (req, res) => {
 
     createUser.password = undefined
 
-    await sendVerificationEmail(email, fullName)
-
-    return res.status(201).json({
+    res.status(201).json({
       message: 'User registered successfully. Verification code sent to email.',
       User: createUser,
     })
+
+    sendVerificationEmail(email, fullName)
   } catch (error) {
     if (error.code === 11000) {
       const field = Object.keys(error.keyValue)[0]
@@ -122,38 +105,32 @@ export const login = async (req, res) => {
     const { email, password } = req.body
 
     if (!email || !password) {
-      return res.status(401).json({
-        message: 'All field is required',
-      })
+      return res.status(400).json({ message: 'All fields are required' })
     }
 
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email }).lean() // .lean() returns plain object, faster
     if (!user) {
-      return res
-        .status(409)
-        .json({ message: 'Email or Password does not match' })
+      return res.status(401).json({ message: 'Invalid email or password' })
     }
 
-    const verifyPwd = await bcrypt.compare(password, user.password)
-    if (!verifyPwd) {
-      return res
-        .status(409)
-        .json({ message: 'Email or Password does not match' })
+    const passwordMatch = await bcrypt.compare(password, user.password)
+    if (!passwordMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' })
     }
 
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     )
 
-    res.json({
+    res.status(200).json({
       message: 'Login successful',
       token,
       role: user.role,
     })
   } catch (error) {
-    res.status(500).json({ message: 'Error from Server', error: error.message })
+    res.status(500).json({ message: `Server error: ${error.message}` })
   }
 }
 
@@ -178,7 +155,7 @@ export const changePassword = async (req, res) => {
       return res.status(404).json({ Message: 'User not found' })
     }
 
-    const hashedPwd = await bcrypt.hash(newPassword, 10)
+    const hashedPwd = await bcrypt.hash(newPassword, 7)
 
     await User.findOneAndUpdate(
       { email },

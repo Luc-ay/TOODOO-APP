@@ -14,8 +14,7 @@ app.use(morgan('dev'))
 app.use('/auth', router)
 
 const PORT = process.env.PORT | 5000
-
+await connectdb()
 app.listen(PORT, async () => {
-  await connectdb()
   console.log(`PORT is listening on http://localhost:${PORT}`)
 })

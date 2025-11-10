@@ -21,35 +21,29 @@ export async function sendVerificationEmail(email, fullName) {
     const code = generateCode()
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // valid for 10 mins
 
-    // Save to DB
     await VerificationCode.create({ email, code, expiresAt })
 
-    // Prepare email
     const sender = {
       email: process.env.EMAIL_FROM,
       name: 'Your App Name',
     }
 
-    console.log('Evrything is fine')
     const templateId = parseInt(process.env.SENDINBLUE_TEMPLATE_ID)
 
-    // Send email using template
     await tranEmailApi.sendTransacEmail({
       sender: { email: process.env.EMAIL_FROM, name: 'Toodoo App' },
       to: [
         {
           email,
-          name: fullName, // populates {{ contact.FIRSTNAME }}
+          name: fullName,
         },
       ],
       templateId: parseInt(process.env.SENDINBLUE_TEMPLATE_ID),
       params: {
-        FIRSTNAME: fullName, // for {{ params.FIRSTNAME }}
-        CODE: code, // for {{ params.CODE }}
+        FIRSTNAME: fullName,
+        CODE: code,
       },
     })
-
-    console.log(`Verification email sent to ${email}`)
     return { success: true }
   } catch (error) {
     console.error('Error sending verification email:', error)
