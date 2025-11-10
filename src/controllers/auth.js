@@ -159,9 +159,39 @@ export const login = async (req, res) => {
 
 export const changePassword = async (req, res) => {
   try {
+    const { token, newPassword } = req.body
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ Message: 'All fields are required' })
+    }
+
+    let decoded
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET)
+    } catch (err) {
+      return res.status(401).json({ Message: 'Invalid or expired token' })
+    }
+
+    const { email } = decoded
+    const user = await User.findOne({ email })
+    if (!user) {
+      return res.status(404).json({ Message: 'User not found' })
+    }
+
+    const hashedPwd = await bcrypt.hash(newPassword, 10)
+
+    await User.findOneAndUpdate(
+      { email },
+      { password: hashedPwd },
+      { new: true }
+    )
+
+    return res
+      .status(200)
+      .json({ Message: 'Password changed successfully. Please log in again.' })
   } catch (error) {
-    return res.send(500).json({
-      Message: `Error from server ${error.message}`,
+    return res.status(500).json({
+      Message: `Error from server: ${error.message}`,
     })
   }
 }
