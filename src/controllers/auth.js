@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import User from '../models/User.js'
+import VerificationCode from '../models/Verify-user.js'
 import { sendVerificationEmail } from '../utils/sendVerificationEmail.js'
 
 export const hirer_register = async (req, res) => {
@@ -162,5 +163,47 @@ export const changePassword = async (req, res) => {
     return res.send(500).json({
       Message: `Error from server ${error.message}`,
     })
+  }
+}
+
+export const verifyCode = async (req, res) => {
+  const { code } = req.body
+
+  if (!code) {
+    return res.status(400).json({ message: 'Verification code is required' })
+  }
+
+  try {
+    const record = await VerificationCode.findOne({ code })
+
+    if (!record) {
+      return res
+        .status(400)
+        .json({ message: 'Invalid or expired verification code' })
+    }
+
+    if (record.expiresAt < new Date()) {
+      await VerificationCode.deleteOne({ email: record.email })
+      return res.status(400).json({ message: 'Verification code expired' })
+    }
+
+    // Mark the user as verified
+    const user = await User.findOneAndUpdate(
+      { email: record.email },
+      { isVerified: true },
+      { new: true }
+    )
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    // Delete the verification record after successful verification
+    await VerificationCode.deleteOne({ email: record.email })
+
+    return res.status(200).json({ message: 'Email verified successfully' })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Internal server error', error: error.message })
   }
 }
