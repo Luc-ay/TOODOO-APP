@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import User from '../models/User.js'
+import { sendVerificationEmail } from '../utils/sendVerificationEmail.js'
 
 export const hirer_register = async (req, res) => {
   try {
@@ -40,8 +41,10 @@ export const hirer_register = async (req, res) => {
 
     createUser.password = undefined
 
+    await sendVerificationEmail(email, fullName)
+
     return res.status(201).json({
-      message: 'Registration successful',
+      message: 'User registered successfully. Verification code sent to email.',
       User: createUser,
     })
   } catch (error) {
@@ -95,8 +98,10 @@ export const worker_register = async (req, res) => {
 
     createUser.password = undefined
 
+    await sendVerificationEmail(email, fullName)
+
     return res.status(201).json({
-      message: 'Registration successful',
+      message: 'User registered successfully. Verification code sent to email.',
       User: createUser,
     })
   } catch (error) {
