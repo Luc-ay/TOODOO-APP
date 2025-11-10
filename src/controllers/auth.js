@@ -166,7 +166,7 @@ export const changePassword = async (req, res) => {
   }
 }
 
-export const verifyCode = async (req, res) => {
+export const verifyUser = async (req, res) => {
   const { code } = req.body
 
   if (!code) {
@@ -204,6 +204,74 @@ export const verifyCode = async (req, res) => {
     return res.status(200).json({ message: 'Email verified successfully' })
   } catch (error) {
     console.error(error)
-    res.status(500).json({ message: 'Internal server error', error: error.message })
+    res
+      .status(500)
+      .json({ message: 'Internal server error', error: error.message })
+  }
+}
+
+export const checktoken = async (req, res) => {
+  return res.status(200).json({
+    Message: 'It worked',
+  })
+}
+
+export const forgetPassword = async (req, res) => {
+  try {
+    const { email } = req.body
+
+    if (!email) {
+      return res.status(409).json({ Message: 'Email is required' })
+    }
+
+    const user = await User.findOne({ email })
+    if (!user) {
+      return res
+        .status(401)
+        .json({ Message: 'User not found, please register' })
+    }
+    const fullName = user.fullName
+    console.log(fullName)
+    await sendVerificationEmail(email, fullName)
+
+    return res.status(201).json({
+      Message: `Verification code sent to ${email}, check your inbox or spam folder`,
+    })
+  } catch (error) {
+    return res.status(500).json({
+      Message: `Error in forget password API ${error.message}`,
+    })
+  }
+}
+
+export const verifyPasswordCode = async (req, res) => {
+  try {
+    const { code } = req.body
+    if (!code) {
+      return res.status(409).json({ Message: 'Code is required' })
+    }
+
+    const record = await VerificationCode.findOne({ code })
+
+    if (!record) {
+      return res
+        .status(400)
+        .json({ message: 'Invalid or expired verification code' })
+    }
+
+    if (record.expiresAt < new Date()) {
+      await VerificationCode.deleteOne({ email: record.email })
+      return res.status(400).json({ message: 'Verification code expired' })
+    }
+
+    const signCode = jwt.sign({ email: record.email }, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    })
+
+    res.json({ signCode })
+  } catch (error) {
+    return res.status(500).json({
+      Message: `Error from server ${error.message}`,
+    })
   }
 }
