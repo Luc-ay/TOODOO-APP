@@ -3,13 +3,13 @@ import express from 'express'
 import {
   changePassword,
   checktoken,
-  forgetPassword,
+  passwordOTP,
   hirer_register,
   login,
   verifyPasswordCode,
-  verifyUser,
+  verifyOtp,
   worker_register,
-} from '../controllers/auth.js'
+} from '../controllers/auth.controller.js'
 import { verifyToken } from '../middleware/auth.js'
 
 const router = express.Router()
@@ -17,8 +17,8 @@ const router = express.Router()
 router.post('/register-hirer', hirer_register)
 router.post('/register-worker', worker_register)
 router.post('/login', login)
-router.post('/verify-user', verifyUser)
-router.post('/forget-password', forgetPassword)
+router.post('/otp/verify', verifyOtp)
+router.post('/forget-password', passwordOTP)
 router.post('/change-password', changePassword)
 router.post('/verify-passcode', verifyPasswordCode)
 router.get('/verify', verifyToken, checktoken)

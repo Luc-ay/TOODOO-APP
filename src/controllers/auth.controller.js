@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import User from '../models/User.js'
 import VerificationCode from '../models/Verify-user.js'
 import { sendVerificationEmail } from '../utils/sendVerificationEmail.js'
+import redisClient from '../config/redis.js'
 
 export const hirer_register = async (req, res) => {
   try {
@@ -173,7 +174,7 @@ export const changePassword = async (req, res) => {
   }
 }
 
-export const verifyUser = async (req, res) => {
+export const verifyOtp = async (req, res) => {
   const { code } = req.body
 
   if (!code) {
@@ -223,7 +224,7 @@ export const checktoken = async (req, res) => {
   })
 }
 
-export const forgetPassword = async (req, res) => {
+export const passwordOTP = async (req, res) => {
   try {
     const { email } = req.body
 
@@ -239,11 +240,12 @@ export const forgetPassword = async (req, res) => {
     }
     const fullName = user.fullName
     console.log(fullName)
-    await sendVerificationEmail(email, fullName)
 
-    return res.status(201).json({
+    res.status(201).json({
       Message: `Verification code sent to ${email}, check your inbox or spam folder`,
     })
+
+    sendVerificationEmail(email, fullName)
   } catch (error) {
     return res.status(500).json({
       Message: `Error in forget password API ${error.message}`,
@@ -258,22 +260,20 @@ export const verifyPasswordCode = async (req, res) => {
       return res.status(409).json({ Message: 'Code is required' })
     }
 
-    const record = await VerificationCode.findOne({ code })
-
-    if (!record) {
-      return res
-        .status(400)
-        .json({ message: 'Invalid or expired verification code' })
+    const redisKey = `${email}`
+    const storedCode = await redisClient.get(redisKey)
+    if (!storedCode) {
+      return res.status(400).json({ message: 'Code expired or not found' })
     }
-
-    if (record.expiresAt < new Date()) {
-      await VerificationCode.deleteOne({ email: record.email })
-      return res.status(400).json({ message: 'Verification code expired' })
+    if (storedCode !== code) {
+      return res.status(400).json({ message: 'Invalid code' })
     }
+    await redisClient.del(redisKey)
 
-    const signCode = jwt.sign({ email: record.email }, process.env.JWT_SECRET, {
-      expiresIn: '1h',
+    const signCode = jwt.sign({ email: redisKey }, process.env.JWT_SECRET, {
+      expiresIn: '5m',
     })
+    await redisClient.setEx(redisKey, 300, signCode)
 
     res.json({ signCode })
   } catch (error) {

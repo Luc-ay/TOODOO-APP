@@ -2,6 +2,7 @@ import dotenv from 'dotenv'
 dotenv.config()
 import Sib from 'sib-api-v3-sdk'
 import VerificationCode from '../models/Verify-user.js'
+import redisClient from '../config/redis.js'
 
 //Sendinblue client
 const client = Sib.ApiClient.instance
@@ -19,16 +20,9 @@ export async function sendVerificationEmail(email, fullName) {
     await VerificationCode.findOneAndDelete({ email })
 
     const code = generateCode()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // valid for 10 mins
 
-    await VerificationCode.create({ email, code, expiresAt })
-
-    const sender = {
-      email: process.env.EMAIL_FROM,
-      name: 'Your App Name',
-    }
-
-    const templateId = parseInt(process.env.SENDINBLUE_TEMPLATE_ID)
+    const redisKey = `${email}`
+    await redisClient.setEx(redisKey, 300, code)
 
     await tranEmailApi.sendTransacEmail({
       sender: { email: process.env.EMAIL_FROM, name: 'Toodoo App' },
