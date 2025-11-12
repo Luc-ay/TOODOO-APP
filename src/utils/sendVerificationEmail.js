@@ -21,23 +21,24 @@ export async function sendVerificationEmail(email, fullName) {
 
     const code = generateCode()
 
-    const redisKey = `${email}`
-    await redisClient.setEx(redisKey, 300, code)
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+
+    await VerificationCode.create({
+      email,
+      code,
+      expiresAt,
+    })
 
     await tranEmailApi.sendTransacEmail({
       sender: { email: process.env.EMAIL_FROM, name: 'Toodoo App' },
-      to: [
-        {
-          email,
-          name: fullName,
-        },
-      ],
+      to: [{ email, name: fullName }],
       templateId: parseInt(process.env.SENDINBLUE_TEMPLATE_ID),
       params: {
         FIRSTNAME: fullName,
         CODE: code,
       },
     })
+
     return { success: true }
   } catch (error) {
     console.error('Error sending verification email:', error)

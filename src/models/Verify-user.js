@@ -1,9 +1,9 @@
 import mongoose from 'mongoose'
 
 const verificationCodeSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
-  code: { type: String, required: true },
-  expiresAt: { type: Date, required: true },
+  email: { type: String, required: true, unique: true, index: true },
+  code: { type: String, required: true, index: true },
+  expiresAt: { type: Date, required: true, index: true },
 })
 
 const VerificationCode = mongoose.model(
