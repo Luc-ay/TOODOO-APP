@@ -257,28 +257,33 @@ export const verifyPasswordCode = async (req, res) => {
   try {
     const { code } = req.body
     if (!code) {
-      return res.status(409).json({ Message: 'Code is required' })
+      return res.status(400).json({ message: 'Code is required' })
     }
 
-    const redisKey = `${email}`
-    const storedCode = await redisClient.get(redisKey)
-    if (!storedCode) {
-      return res.status(400).json({ message: 'Code expired or not found' })
-    }
-    if (storedCode !== code) {
-      return res.status(400).json({ message: 'Invalid code' })
-    }
-    await redisClient.del(redisKey)
+    const record = await VerificationCode.findOne({ code })
 
-    const signCode = jwt.sign({ email: redisKey }, process.env.JWT_SECRET, {
+    if (!record) {
+      return res.status(400).json({ message: 'Invalid or expired code' })
+    }
+
+    if (record.expiresAt < new Date()) {
+      await VerificationCode.deleteOne({ _id: record._id })
+      return res.status(400).json({ message: 'Code has expired' })
+    }
+
+    const email = record.email
+
+    const signCode = jwt.sign({ email }, process.env.JWT_SECRET, {
       expiresIn: '5m',
     })
-    await redisClient.setEx(redisKey, 300, signCode)
+
+    await VerificationCode.deleteOne({ _id: record._id })
 
     res.json({ signCode })
   } catch (error) {
+    console.error('Error verifying code:', error)
     return res.status(500).json({
-      Message: `Error from server ${error.message}`,
+      message: `Error from server: ${error.message}`,
     })
   }
 }

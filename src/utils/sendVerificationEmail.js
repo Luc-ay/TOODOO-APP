@@ -2,7 +2,6 @@ import dotenv from 'dotenv'
 dotenv.config()
 import Sib from 'sib-api-v3-sdk'
 import VerificationCode from '../models/Verify-user.js'
-import redisClient from '../config/redis.js'
 
 //Sendinblue client
 const client = Sib.ApiClient.instance
