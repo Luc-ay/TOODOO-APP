@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken'
 import User from '../models/User.js'
 import VerificationCode from '../models/Verify-user.js'
 import { sendVerificationEmail } from '../utils/sendVerificationEmail.js'
-import redisClient from '../config/redis.js'
 
 export const hirer_register = async (req, res) => {
   try {
