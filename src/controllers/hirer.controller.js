@@ -1,6 +1,7 @@
 import redisClient from '../config/redis.js'
 import User from '../models/User.js'
 import cloudinary from '../config/cloudinary.js'
+import bcrypt from 'bcrypt'
 
 export const getUserProfile = async (req, res) => {
   try {
@@ -75,5 +76,45 @@ export const updateUserProfile = async (req, res) => {
     res
       .status(500)
       .json({ message: 'Error updating profile', error: error.message })
+  }
+}
+
+export const changePWD = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const { password } = req.body
+
+    if (!password) {
+      return res.status(400).json({ message: 'Password cannot be empty' })
+    }
+
+    if (password.length <= 5) {
+      return res.status(409).json({ message: 'Password is too short' })
+    }
+
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    const isSame = await bcrypt.compare(password, user.password)
+    if (isSame) {
+      return res
+        .status(400)
+        .json({ message: 'Password cannot be the same as old password' })
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    // Update user password
+    user.password = hashedPassword
+    await user.save()
+
+    res.status(200).json({ message: 'Password changed successfully' })
+  } catch (error) {
+    console.error('changePWD error:', error)
+    res
+      .status(500)
+      .json({ message: 'Error changing password', error: error.message })
   }
 }
