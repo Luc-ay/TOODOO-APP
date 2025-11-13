@@ -4,6 +4,7 @@ import morgan from 'morgan'
 import redisClient from './config/redis.js'
 import authRouter from './routes/auth.routes.js'
 import hirerRouter from './routes/hirer.profile.js'
+import workerRoute from './routes/worker.route.js'
 import connectdb from './config/database.js'
 
 dotenv.config()
@@ -21,6 +22,7 @@ app.use(morgan('dev'))
 
 app.use('/auth', authRouter)
 app.use('/hirer', hirerRouter)
+app.use('/worker', workerRoute)
 
 const PORT = process.env.PORT | 5000
 await connectdb()
