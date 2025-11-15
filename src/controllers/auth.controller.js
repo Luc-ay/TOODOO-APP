@@ -49,6 +49,11 @@ export const hirer_register = async (req, res) => {
         message: `User with this ${field} (${value}) already exists.`,
       })
     }
+
+    console.error(error)
+    res
+      .status(500)
+      .json({ message: 'Internal server error', error: error.message })
   }
 }
 

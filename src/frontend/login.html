@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hirer Login</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      input,
+      button {
+        display: block;
+        margin: 10px 0;
+        padding: 10px;
+        width: 100%;
+        max-width: 400px;
+      }
+      #response {
+        white-space: pre-wrap;
+        background: #f1f1f1;
+        padding: 10px;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Hirer Login</h2>
+
+    <label>Email:</label>
+    <input id="email" type="email" placeholder="john@example.com" />
+
+    <label>Password:</label>
+    <input id="password" type="password" placeholder="Enter password" />
+
+    <button onclick="loginHirer()">Login</button>
+
+    <h3>Response:</h3>
+    <div id="response"></div>
+
+    <script>
+      function setCookie(name, value, days) {
+        const expires = new Date(Date.now() + days * 864e5).toUTCString()
+        document.cookie =
+          name +
+          '=' +
+          encodeURIComponent(value) +
+          '; expires=' +
+          expires +
+          '; path=/'
+      }
+
+      async function loginHirer() {
+        const url = 'http://localhost:5050/auth/login' // replace with your actual endpoint
+        const body = {
+          email: document.getElementById('email').value,
+          password: document.getElementById('password').value,
+        }
+
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          })
+
+          const data = await res.json()
+          document.getElementById('response').textContent = JSON.stringify(
+            data,
+            null,
+            2
+          )
+
+          if (res.ok && data.token) {
+            // Save token in cookie for authentication
+            setCookie('auth', data.token, 1) // expires in 1 day
+
+            // Redirect to simple homepage for authenticated users
+            window.location.href = 'homepage.html'
+          }
+        } catch (err) {
+          document.getElementById('response').textContent = 'Error: ' + err
+        }
+      }
+    </script>
+  </body>
+</html>

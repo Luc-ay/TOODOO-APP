@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Worker Registration</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      input,
+      button,
+      select {
+        display: block;
+        margin: 10px 0;
+        padding: 10px;
+        width: 100%;
+        max-width: 400px;
+      }
+      #response {
+        white-space: pre-wrap;
+        background: #f1f1f1;
+        padding: 10px;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Worker Registration</h2>
+
+    <label>Full Name:</label>
+    <input id="fullName" placeholder="John Doe" />
+
+    <label>Email:</label>
+    <input id="email" type="email" placeholder="john@example.com" />
+
+    <label>Phone:</label>
+    <input id="phone" placeholder="08012345678" />
+
+    <label>Password:</label>
+    <input id="password" type="password" placeholder="Enter password" />
+
+    <label>Gender:</label>
+    <select id="gender">
+      <option value="">Select Gender</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+      <option value="other">Other</option>
+    </select>
+
+    <button onclick="registerWorker()">Register</button>
+
+    <h3>Response:</h3>
+    <div id="response"></div>
+
+    <script>
+      async function registerWorker() {
+        const url = 'http://localhost:5050/auth/register-worker' // replace with your actual endpoint
+        const body = {
+          fullName: document.getElementById('fullName').value,
+          email: document.getElementById('email').value,
+          phone: document.getElementById('phone').value,
+          password: document.getElementById('password').value,
+          gender: document.getElementById('gender').value,
+        }
+
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          })
+
+          const data = await res.json()
+          document.getElementById('response').textContent = JSON.stringify(
+            data,
+            null,
+            2
+          )
+        } catch (err) {
+          document.getElementById('response').textContent = 'Error: ' + err
+        }
+      }
+    </script>
+  </body>
+</html>

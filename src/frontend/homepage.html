@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome Page</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        text-align: center;
+      }
+      button {
+        padding: 10px 20px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Welcome to the Hirer Dashboard</h1>
+    <p>This page is accessible only for authenticated users.</p>
+
+    <button onclick="logout()">Logout</button>
+
+    <script>
+      // Check for auth token
+      function getCookie(name) {
+        const value = `; ${document.cookie}`
+        const parts = value.split(`; ${name}=`)
+        if (parts.length === 2) return parts.pop().split(';').shift()
+      }
+
+      const token = getCookie('auth')
+      if (!token) {
+        alert('You are not authenticated. Redirecting to login.')
+        window.location.href = 'login.html'
+      }
+
+      function logout() {
+        document.cookie = 'auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/'
+        window.location.href = 'login.html'
+      }
+    </script>
+  </body>
+</html>
