@@ -42,13 +42,9 @@
     <script>
       function setCookie(name, value, days) {
         const expires = new Date(Date.now() + days * 864e5).toUTCString()
-        document.cookie =
-          name +
-          '=' +
-          encodeURIComponent(value) +
-          '; expires=' +
-          expires +
-          '; path=/'
+        document.cookie = `${name}=${encodeURIComponent(
+          value
+        )}; expires=${expires}; path=/; SameSite=Lax`
       }
 
       async function loginHirer() {
@@ -63,6 +59,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
+            credentials: 'include',
           })
 
           const data = await res.json()
@@ -73,10 +70,7 @@
           )
 
           if (res.ok && data.token) {
-            // Save token in cookie for authentication
-            setCookie('auth', data.token, 1) // expires in 1 day
-
-            // Redirect to simple homepage for authenticated users
+            setCookie('auth', data.token, 1) 
             window.location.href = 'homepage.html'
           }
         } catch (err) {

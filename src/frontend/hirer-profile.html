@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hirer Profile</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f7f7f7;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+        background: #fff;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+      }
+      .profile-pic {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        display: block;
+        margin: 20px auto;
+        border: 3px solid #ddd;
+      }
+      .field {
+        margin: 10px 0;
+        font-size: 16px;
+      }
+      .label {
+        font-weight: bold;
+      }
+      #loading {
+        text-align: center;
+        padding: 20px;
+        font-size: 18px;
+        display: none;
+      }
+      button {
+        padding: 12px;
+        width: 100%;
+        margin-top: 15px;
+        font-size: 16px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+      .edit-btn {
+        background: #007bff;
+        color: #fff;
+      }
+      .logout-btn {
+        background: #dc3545;
+        color: white;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h2>Hirer Profile</h2>
+
+      <div id="loading">Loading profile...</div>
+
+      <img
+        id="profilePic"
+        class="profile-pic"
+        src=""
+        alt="Profile Picture"
+        style="display: none"
+      />
+
+      <div id="profile"></div>
+
+      <button class="edit-btn" onclick="goToEdit()">Edit Profile</button>
+      <button class="edit-btn" onclick="goToChangePassword()">
+        Change Password
+      </button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+      function getCookie(name) {
+        const value = `; ${document.cookie}`
+        const parts = value.split(`; ${name}=`)
+        if (parts.length === 2) return parts.pop().split(';').shift()
+      }
+
+      const token = getCookie('auth')
+
+      if (!token) {
+        alert('Not authenticated. Redirecting to login.')
+        window.location.href = 'login.html'
+      }
+
+      document.getElementById('loading').style.display = 'block'
+
+      async function loadProfile() {
+        try {
+          const res = await fetch('http://localhost:5050/hirer/', {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${token}` },
+          })
+
+          if (res.status === 401) {
+            alert('Session expired. Please log in again.')
+            window.location.href = 'login.html'
+            return
+          }
+
+          const data = await res.json()
+          document.getElementById('loading').style.display = 'none'
+
+          if (!res.ok) {
+            document.getElementById(
+              'profile'
+            ).innerHTML = `<p style="color:red;">${data.message}</p>`
+            return
+          }
+
+          const user = data.user
+
+          const pic = document.getElementById('profilePic')
+
+          // FINAL FIX: Ensure correct image loading
+          if (user.profilePic && user.profilePic !== '') {
+            pic.src = `http://localhost:5050/uploads/${
+              user.profilePic
+            }?t=${Date.now()}`
+          } else {
+            pic.src = 'https://via.placeholder.com/120?text=Photo'
+          }
+
+          pic.style.display = 'block'
+
+          document.getElementById('profile').innerHTML = `
+            <div class="field"><span class="label">Full Name:</span> ${
+              user.fullName
+            }</div>
+            <div class="field"><span class="label">Email:</span> ${
+              user.email
+            }</div>
+            <div class="field"><span class="label">Phone:</span> ${
+              user.phone
+            }</div>
+            <div class="field"><span class="label">Gender:</span> ${
+              user.gender
+            }</div>
+            <div class="field"><span class="label">Role:</span> ${
+              user.role
+            }</div>
+            <div class="field"><span class="label">Verified:</span> ${
+              user.isVerified ? 'Yes' : 'No'
+            }</div>
+            <div class="field"><span class="label">Wallet Balance:</span> ₦${user.walletBalance.toLocaleString()}</div>
+
+            <h3>Location</h3>
+            <div class="field"><span class="label">Country:</span> ${
+              user.location?.country ?? 'N/A'
+            }</div>
+            <div class="field"><span class="label">State:</span> ${
+              user.location?.state ?? 'N/A'
+            }</div>
+            <div class="field"><span class="label">Area:</span> ${
+              user.location?.area ?? 'N/A'
+            }</div>
+            <div class="field"><span class="label">Address:</span> ${
+              user.location?.address ?? 'N/A'
+            }</div>
+        `
+        } catch (err) {
+          document.getElementById(
+            'profile'
+          ).innerHTML = `<p style="color:red;">Error loading profile: ${err.message}</p>`
+          document.getElementById('loading').style.display = 'none'
+        }
+      }
+
+      loadProfile()
+
+      function goToEdit() {
+        window.location.href = 'edit-profile.html'
+      }
+
+      function goToChangePassword() {
+        window.location.href = 'change-password.html'
+      }
+
+      function logout() {
+        document.cookie =
+          'auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+        localStorage.clear()
+        window.location.href = 'login.html'
+      }
+    </script>
+  </body>
+</html>

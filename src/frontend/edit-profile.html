@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Hirer Profile</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        padding: 20px;
+        max-width: 600px;
+        margin: auto;
+      }
+      h2 {
+        text-align: center;
+      }
+      label {
+        font-weight: bold;
+        display: block;
+        margin-top: 10px;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      button {
+        background: #007bff;
+        color: #fff;
+        padding: 12px;
+        border: none;
+        border-radius: 4px;
+        width: 100%;
+        margin-top: 20px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      #profilePicPreview {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        display: block;
+        margin: 10px auto;
+        object-fit: cover;
+        border: 2px solid #ccc;
+      }
+      .back-btn {
+        background: #6c757d;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Edit Profile</h2>
+
+    <img id="profilePicPreview" src="" alt="Profile Picture" />
+
+    <label>Change Profile Picture</label>
+    <input type="file" id="profilePic" accept="image/*" />
+
+    <label>Full Name</label>
+    <input id="fullName" type="text" placeholder="Enter full name" />
+
+    <label>Phone Number</label>
+    <input id="phone" type="text" placeholder="Enter phone number" />
+
+    <label>Gender</label>
+    <select id="gender">
+      <option value="">Select gender</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+    </select>
+
+    <label>Country</label>
+    <input id="country" type="text" placeholder="Country" />
+
+    <label>State</label>
+    <input id="state" type="text" placeholder="State" />
+
+    <label>Area</label>
+    <input id="area" type="text" placeholder="Area" />
+
+    <label>Address</label>
+    <textarea id="address" placeholder="Full address"></textarea>
+
+    <button onclick="updateProfile()">Save Changes</button>
+    <button
+      class="back-btn"
+      onclick="window.location.href='hirer-profile.html'"
+    >
+      Back to Profile
+    </button>
+
+    <p id="message"></p>
+
+    <script>
+      function getCookie(name) {
+        const value = `; ${document.cookie}`
+        const parts = value.split(`; ${name}=`)
+        if (parts.length === 2) return parts.pop().split(';').shift()
+      }
+
+      const token = getCookie('auth')
+      if (!token) {
+        alert('Unauthorized. Redirecting to login.')
+        window.location.href = 'login.html'
+      }
+
+      // Load existing user profile
+      async function loadProfile() {
+        try {
+          const res = await fetch('http://localhost:5050/hirer/', {
+            method: 'GET',
+            headers: { Authorization: 'Bearer ' + token },
+          })
+
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.message)
+
+          const u = data.user
+
+          document.getElementById('fullName').value = u.fullName || ''
+          document.getElementById('phone').value = u.phone || ''
+          document.getElementById('gender').value = u.gender || ''
+          document.getElementById('country').value = u.location?.country || ''
+          document.getElementById('state').value = u.location?.state || ''
+          document.getElementById('area').value = u.location?.area || ''
+          document.getElementById('address').value = u.location?.address || ''
+          document.getElementById('profilePicPreview').src =
+            u.profilePic || 'https://via.placeholder.com/120?text=Photo'
+        } catch (err) {
+          console.error('Profile load error:', err)
+          document.getElementById('message').textContent =
+            'Error loading profile.'
+        }
+      }
+
+      loadProfile()
+
+      // Update profile using FormData for local file upload
+      async function updateProfile() {
+        const formData = new FormData()
+        formData.append('fullName', document.getElementById('fullName').value)
+        formData.append('phone', document.getElementById('phone').value)
+        formData.append('gender', document.getElementById('gender').value)
+        formData.append(
+          'location[country]',
+          document.getElementById('country').value
+        )
+        formData.append(
+          'location[state]',
+          document.getElementById('state').value
+        )
+        formData.append('location[area]', document.getElementById('area').value)
+        formData.append(
+          'location[address]',
+          document.getElementById('address').value
+        )
+
+        const fileInput = document.getElementById('profilePic')
+        if (fileInput.files[0]) {
+          formData.append('profilePic', fileInput.files[0])
+        }
+
+        try {
+          const res = await fetch('http://localhost:5050/hirer/update', {
+            method: 'PUT',
+            headers: { Authorization: 'Bearer ' + token },
+            body: formData,
+          })
+
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.message)
+
+          document.getElementById('message').textContent = 'Profile updated!'
+          setTimeout(() => {
+            window.location.href = 'hirer-profile.html'
+          }, 800)
+        } catch (err) {
+          console.error(err)
+          document.getElementById('message').textContent = err.message
+        }
+      }
+
+      // Preview selected profile picture
+      document
+        .getElementById('profilePic')
+        .addEventListener('change', function (e) {
+          const file = e.target.files[0]
+          if (file) {
+            const reader = new FileReader()
+            reader.onload = function () {
+              document.getElementById('profilePicPreview').src = reader.result
+            }
+            reader.readAsDataURL(file)
+          }
+        })
+    </script>
+  </body>
+</html>

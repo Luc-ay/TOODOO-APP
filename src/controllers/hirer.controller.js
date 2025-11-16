@@ -1,6 +1,7 @@
 import redisClient from '../config/redis.js'
 import User from '../models/User.js'
-import cloudinary from '../config/cloudinary.js'
+import path from 'path'
+import fs from 'fs'
 import bcrypt from 'bcrypt'
 
 export const getUserProfile = async (req, res) => {
@@ -39,18 +40,13 @@ export const updateUserProfile = async (req, res) => {
     const { fullName, phone, gender, location } = req.body
 
     const updateFields = {}
-
     if (fullName) updateFields.fullName = fullName
     if (phone) updateFields.phone = phone
     if (gender) updateFields.gender = gender
     if (location) updateFields.location = location
 
-    if (req.body.profilePic) {
-      const uploaded = await cloudinary.uploader.upload(req.body.profilePic, {
-        folder: 'user_profilePics',
-        transformation: [{ width: 500, height: 500, crop: 'limit' }],
-      })
-      updateFields.profilePic = uploaded.secure_url
+    if (req.file) {
+      updateFields.profilePic = req.file.filename
     }
 
     const updatedUser = await User.findByIdAndUpdate(userId, updateFields, {
@@ -58,14 +54,14 @@ export const updateUserProfile = async (req, res) => {
       runValidators: true,
     }).select('-password')
 
-    if (!updatedUser) {
-      return res.status(404).json({ message: 'User not found' })
-    }
+    if (!updatedUser) return res.status(404).json({ message: 'User not found' })
 
     if (redisClient) {
       const redisKey = `user:${userId}`
-      await redisClient.setEx(redisKey, 300, JSON.stringify(updatedUser)) // 5 min TTL
+      await redisClient.del(redisKey)
     }
+
+    await redisClient.setEx(`user:${userId}`, 300, JSON.stringify(updatedUser))
 
     res.status(200).json({
       message: 'Profile updated successfully',

@@ -1,5 +1,5 @@
 import WorkerProfile from '../models/Worker.Profile.js'
-import cloudinary from '../config/cloudinary.js'
+import cloudinary from '../config/multer.js'
 import User from '../models/User.js'
 import redisClient from '../config/redis.js'
 

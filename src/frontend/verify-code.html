@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify Code</title>
+    <style>
+      body {
+        font-family: Arial;
+        padding: 20px;
+      }
+      input,
+      button {
+        display: block;
+        margin: 10px 0;
+        padding: 10px;
+        width: 100%;
+        max-width: 400px;
+      }
+      #response {
+        margin-top: 15px;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Enter Verification Code</h2>
+
+    <label>Verification Code</label>
+    <input id="code" type="text" placeholder="Enter the 6-digit code" />
+
+    <button onclick="verifyCode()">Verify</button>
+
+    <div id="response"></div>
+
+    <script>
+      async function verifyCode() {
+        const code = document.getElementById('code').value
+
+        const res = await fetch('http://localhost:5050/auth/verify-passcode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+        })
+
+        const data = await res.json()
+        document.getElementById('response').textContent = JSON.stringify(
+          data,
+          null,
+          2
+        )
+
+        if (res.ok && data.signCode) {
+          localStorage.setItem('resetToken', data.signCode)
+          window.location.href = 'reset-password.html'
+        }
+      }
+    </script>
+  </body>
+</html>

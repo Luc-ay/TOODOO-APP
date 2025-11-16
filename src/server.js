@@ -8,6 +8,7 @@ import authRouter from './routes/auth.routes.js'
 import hirerRouter from './routes/hirer.profile.js'
 import workerRoute from './routes/worker.route.js'
 import connectdb from './config/database.js'
+import { fileURLToPath } from 'url'
 
 dotenv.config()
 async function startServer() {
@@ -18,15 +19,19 @@ async function startServer() {
 }
 
 const app = express()
-app.use(cors())
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
+app.use(
+  cors({
+    origin: 'http://127.0.0.1:5500',
+    credentials: true,
+  })
+)
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')))
 
-
-app.use(express.static(path.join(__dirname, 'frontend')));
 app.use(express.static('frontend'))
 app.use(morgan('dev'))
 
@@ -34,6 +39,7 @@ app.use('/auth', authRouter)
 app.use('/hirer', hirerRouter)
 app.use('/worker', workerRoute)
 
+app.use(express.static(path.join(__dirname, 'frontend')))
 const PORT = process.env.PORT | 5000
 await connectdb()
 app.listen(PORT, async () => {
