@@ -1,5 +1,4 @@
 import WorkerProfile from '../models/Worker.Profile.js'
-import cloudinary from '../config/multer.js'
 import User from '../models/User.js'
 import redisClient from '../config/redis.js'
 
@@ -7,7 +6,7 @@ export const getWorkerProfile = async (req, res) => {
   try {
     const userId = req.user.id
 
-    const redisKey = `user:${id}`
+    const redisKey = `user:${userId}`
 
     const cachedProfile = await redisClient.get(redisKey)
     if (cachedProfile) {
@@ -39,86 +38,87 @@ export const getWorkerProfile = async (req, res) => {
 }
 
 export const updateWorkerProfile = async (req, res) => {
-  const { userId } = req.user.id
-
-  const allowedFields = [
-    'serviceType',
-    'bio',
-    'hourlyRate',
-    'rating',
-    'totalJobs',
-    'availability',
-  ]
-
-  const updateData = {}
-
-  Object.keys(req.body).forEach((key) => {
-    if (allowedFields.includes(key)) {
-      updateData[key] = req.body[key]
-    }
-  })
-
   try {
-    const profile = await WorkerProfile.findOne({ userId })
+    const userId = req.user.id
+
+    const allowedFields = [
+      'serviceType',
+      'bio',
+      'hourlyRate',
+      'rating',
+      'totalJobs',
+    ]
+
+    const updateData = {}
+
+    if (req.body && Object.keys(req.body).length > 0) {
+      Object.keys(req.body).forEach((key) => {
+        if (allowedFields.includes(key)) {
+          updateData[key] = req.body[key]
+        }
+      })
+    }
+
+    // Fetch worker profile
+    const profile = await User.findById(userId).select('-password')
     if (!profile) {
       return res.status(404).json({ message: 'Worker profile not found' })
     }
 
-    let { skills } = req.body
-    if (skills) {
-      if (typeof skills === 'string') {
-        skills = JSON.parse(skills)
-      }
-      if (Array.isArray(skills)) {
-        profile.skills.push(...skills)
-      }
-    }
-
-    let { gallery } = req.body
-    if (gallery && Array.isArray(gallery)) {
-      for (const img of gallery) {
-        if (img.startsWith('http')) {
-          profile.gallery.push(img)
-        } else {
-          const result = await cloudinary.uploader.upload(img, {
-            folder: 'worker_gallery',
-          })
-          profile.gallery.push(result.secure_url)
+    // --- SKILLS (sent as JSON string) ---
+    if (req.body?.skills) {
+      try {
+        const parsedSkills = JSON.parse(req.body.skills)
+        if (Array.isArray(parsedSkills)) {
+          profile.skills = parsedSkills // overwrite completely
         }
+      } catch (err) {
+        console.log('Invalid skills JSON')
       }
     }
 
-    let { credentials } = req.body
-    if (credentials && Array.isArray(credentials)) {
-      for (const cred of credentials) {
-        if (cred.startsWith('http')) {
-          profile.credentials.push(cred)
-        } else {
-          const result = await cloudinary.uploader.upload(cred, {
-            folder: 'worker_credentials',
-          })
-          profile.credentials.push(result.secure_url)
+    // --- AVAILABILITY ---
+    if (req.body?.availability) {
+      try {
+        const parsed = JSON.parse(req.body.availability)
+        if (Array.isArray(parsed)) {
+          profile.availability = parsed
         }
+      } catch (err) {
+        console.log('Invalid availability JSON')
       }
     }
 
+    // --- CREDENTIALS UPLOAD (multer files) ---
+    if (req.files?.credentials) {
+      req.files.credentials.forEach((file) => {
+        profile.credentials.push(file.filename)
+      })
+    }
+
+    // --- GALLERY UPLOAD ---
+    if (req.files?.gallery) {
+      req.files.gallery.forEach((file) => {
+        profile.gallery.push(file.filename)
+      })
+    }
+
+    // Apply text field updates
     Object.assign(profile, updateData)
 
-    // Save updated profile
-    const updatedProfile = await profile.save()
+    // Save everything
+    const work = WorkerProfile
+    const saved = await work.save()
 
-    if (redisClient) {
-      const redisKey = `user:${userId}`
-      await redisClient.setEx(redisKey, 500, JSON.stringify(updatedProfile))
-    }
     res.status(200).json({
       message: 'Worker profile updated successfully',
-      data: updatedProfile,
+      worker: saved,
     })
   } catch (error) {
     console.error('Error updating worker profile:', error)
-    res
-      .status(500)
-      .json({ message: 'Internal server error', error: error.message })
+    res.status(500).json({
+      message: 'Internal server error',
+      error: error.message,
+    })
   }
 }

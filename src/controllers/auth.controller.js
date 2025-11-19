@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import User from '../models/User.js'
 import VerificationCode from '../models/Verify-user.js'
 import { sendVerificationEmail } from '../utils/sendVerificationEmail.js'
+import WorkerProfile from '../models/Worker.Profile.js'
 
 export const hirer_register = async (req, res) => {
   try {
@@ -59,7 +60,18 @@ export const hirer_register = async (req, res) => {
 
 export const worker_register = async (req, res) => {
   try {
-    const { fullName, email, phone, password, gender } = req.body
+    const {
+      fullName,
+      email,
+      phone,
+      password,
+      gender,
+      serviceType,
+      bio,
+      hourlyRate,
+      skills,
+      availability,
+    } = req.body
 
     if (!fullName || !email || !phone || !password || !gender) {
       return res.status(400).json({
@@ -83,10 +95,20 @@ export const worker_register = async (req, res) => {
       role,
     })
 
-    await createUser.save()
+    const savedUser = await createUser.save()
 
     createUser.password = undefined
 
+    const worker = new WorkerProfile({
+      user: savedUser._id,
+      bio,
+      serviceType,
+      skills: skills || [],
+      hourlyRate,
+      availability: availability || [],
+    })
+
+    await worker.save()
     res.status(201).json({
       message: 'User registered successfully. Verification code sent to email.',
       User: createUser,

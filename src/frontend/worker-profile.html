@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Worker Profile</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f7f7f7;
+        padding: 20px;
+      }
+      .container {
+        max-width: 700px;
+        margin: auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h2 {
+        text-align: center;
+        margin-bottom: 10px;
+      }
+      .section-title {
+        font-weight: bold;
+        margin-top: 20px;
+        font-size: 18px;
+      }
+      .gallery img {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        margin: 5px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+      .field {
+        margin: 8px 0;
+      }
+      .label {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h2>Worker Profile</h2>
+
+      <div id="loading">Loading profile...</div>
+
+      <div id="profile" style="display: none"></div>
+    </div>
+
+    <script>
+      function getCookie(name) {
+        const value = `; ${document.cookie}`
+        const parts = value.split(`; ${name}=`)
+        if (parts.length === 2) return parts.pop().split(';').shift()
+      }
+
+      const token = getCookie('auth')
+
+      if (!token) {
+        alert('Not authenticated. Redirecting to login.')
+        window.location.href = 'login.html'
+      }
+
+      async function loadWorkerProfile() {
+        try {
+          const res = await fetch('http://localhost:5050/worker/profile', {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+
+          const data = await res.json()
+          document.getElementById('loading').style.display = 'none'
+
+          if (!res.ok) {
+            document.getElementById(
+              'profile'
+            ).innerHTML = `<p style="color:red;">${data.message}</p>`
+            document.getElementById('profile').style.display = 'block'
+            return
+          }
+
+          const wrapper = document.getElementById('profile')
+          wrapper.style.display = 'block'
+
+          const user = data.Worker.getUser // user info (from User model)
+          const work = data.Worker.getWork[0] // work profile (WorkerProfile model)
+
+          wrapper.innerHTML = `
+          <div class="section-title">Personal Information</div>
+          <div class="field"><span class="label">Full Name:</span> ${
+            user.fullName
+          }</div>
+          <div class="field"><span class="label">Email:</span> ${
+            user.email
+          }</div>
+          <div class="field"><span class="label">Phone:</span> ${
+            user.phone
+          }</div>
+          <div class="field"><span class="label">Gender:</span> ${
+            user.gender
+          }</div>
+
+          <div class="section-title">Work Details</div>
+          <div class="field"><span class="label">Service Type:</span> ${
+            work.serviceType
+          }</div>
+          <div class="field"><span class="label">Hourly Rate:</span> ₦${
+            work.hourlyRate
+          }</div>
+          <div class="field"><span class="label">Rating:</span> ${
+            work.rating
+          }</div>
+          <div class="field"><span class="label">Total Jobs:</span> ${
+            work.totalJobs
+          }</div>
+
+          <div class="section-title">Skills</div>
+          ${
+            work.skills && work.skills.length > 0
+              ? work.skills
+                  .map((s) => `<div>${s.name} — ${s.years} years</div>`)
+                  .join('')
+              : 'No skills added'
+          }
+
+          <div class="section-title">Availability</div>
+          ${
+            work.availability && work.availability.length > 0
+              ? work.availability
+                  .map((a) => `<div>${a.day}: ${a.start} - ${a.end}</div>`)
+                  .join('')
+              : 'Not set'
+          }
+
+          <div class="section-title">Bio</div>
+          <div>${work.bio || 'No bio'}</div>
+
+          <div class="section-title">Credentials</div>
+          ${
+            work.credentials && work.credentials.length > 0
+              ? work.credentials
+                  .map(
+                    (c) =>
+                      `<div><a href="http://localhost:5050/uploads/${c}" target="_blank">${c}</a></div>`
+                  )
+                  .join('')
+              : 'No credentials uploaded'
+          }
+
+          <div class="section-title">Gallery</div>
+          <div class="gallery">
+            ${
+              work.gallery && work.gallery.length > 0
+                ? work.gallery
+                    .map(
+                      (g) => `<img src="http://localhost:5050/uploads/${g}" />`
+                    )
+                    .join('')
+                : 'No work images uploaded'
+            }
+          </div>
+        `
+        } catch (err) {
+          document.getElementById('loading').style.display = 'none'
+          document.getElementById(
+            'profile'
+          ).innerHTML = `<p style="color:red;">Error loading profile: ${err.message}</p>`
+          document.getElementById('profile').style.display = 'block'
+        }
+      }
+
+      loadWorkerProfile()
+    </script>
+  </body>
+</html>

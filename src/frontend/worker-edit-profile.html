@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Worker Profile</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f7f7f7;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+      }
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 12px;
+        margin: 10px 0;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      button {
+        padding: 12px;
+        width: 100%;
+        margin-top: 10px;
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+        background: #007bff;
+        color: white;
+        font-size: 16px;
+      }
+      .add-btn {
+        background: #28a745;
+        margin-top: 0;
+      }
+      .remove-btn {
+        background: #dc3545;
+        padding: 6px;
+        font-size: 14px;
+        width: auto;
+      }
+      .msg {
+        margin-top: 10px;
+        text-align: center;
+        font-size: 15px;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .row input,
+      .row select {
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h2>Edit Worker Profile</h2>
+
+      <label>Service Type</label>
+      <input type="text" id="serviceType" placeholder="e.g. Electrician" />
+
+      <label>Bio</label>
+      <textarea
+        id="bio"
+        placeholder="Write something about your work"
+      ></textarea>
+
+      <label>Hourly Rate (₦)</label>
+      <input type="number" id="hourlyRate" />
+
+      <h3>Skills</h3>
+      <div id="skillsSection"></div>
+      <button class="add-btn" onclick="addSkill()">+ Add Skill</button>
+
+      <h3>Availability</h3>
+      <div id="availabilitySection"></div>
+      <button class="add-btn" onclick="addAvailability()">
+        + Add Availability
+      </button>
+
+      <label>Upload Credentials (multiple allowed)</label>
+      <input type="file" id="credentials" multiple />
+
+      <label>Upload Gallery Images (multiple allowed)</label>
+      <input type="file" id="gallery" multiple />
+
+      <button onclick="updateWorkerProfile()">Save Changes</button>
+
+      <div id="msg" class="msg"></div>
+    </div>
+
+    <script>
+      function getCookie(name) {
+        const value = `; ${document.cookie}`
+        const parts = value.split(`; ${name}=`)
+        if (parts.length === 2) return parts.pop().split(';').shift()
+      }
+
+      const token = getCookie('auth')
+      if (!token) {
+        alert('Not authenticated. Redirecting...')
+        window.location.href = 'login.html'
+      }
+
+      // ------------------------
+      // ADD SKILLS
+      // ------------------------
+
+      function addSkill() {
+        const container = document.getElementById('skillsSection')
+        const div = document.createElement('div')
+
+        div.className = 'row'
+        div.innerHTML = `
+      <input type="text" placeholder="Skill Name" class="skill-name">
+      <input type="number" placeholder="Years" class="skill-years">
+      <button class="remove-btn" onclick="this.parentElement.remove()">X</button>
+    `
+        container.appendChild(div)
+      }
+
+      // start with one empty row
+      addSkill()
+
+      // ------------------------
+      // ADD AVAILABILITY
+      // ------------------------
+
+      function addAvailability() {
+        const container = document.getElementById('availabilitySection')
+        const div = document.createElement('div')
+
+        div.className = 'row'
+        div.innerHTML = `
+      <select class="avail-day">
+        <option value="">Day</option>
+        <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+        <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+      </select>
+
+      <input type="time" class="avail-start">
+      <input type="time" class="avail-end">
+      <button class="remove-btn" onclick="this.parentElement.remove()">X</button>
+    `
+        container.appendChild(div)
+      }
+
+      // start with one empty row
+      addAvailability()
+
+      // ------------------------
+      // UPDATE PROFILE (SEND TO BACKEND)
+      // ------------------------
+      async function updateWorkerProfile() {
+        const msg = document.getElementById('msg')
+        msg.innerHTML = ''
+
+        const formData = new FormData()
+
+        const serviceType = document.getElementById('serviceType').value
+        const bio = document.getElementById('bio').value
+        const hourlyRate = document.getElementById('hourlyRate').value
+
+        if (serviceType) formData.append('serviceType', serviceType)
+        if (bio) formData.append('bio', bio)
+        if (hourlyRate) formData.append('hourlyRate', hourlyRate)
+
+        // Collect skills
+        const skillNames = document.querySelectorAll('.skill-name')
+        const skillYears = document.querySelectorAll('.skill-years')
+
+        const skillsArray = []
+        skillNames.forEach((el, i) => {
+          if (el.value.trim() !== '') {
+            skillsArray.push({
+              name: el.value.trim(),
+              years: Number(skillYears[i].value || 0),
+            })
+          }
+        })
+
+        formData.append('skills', JSON.stringify(skillsArray))
+
+        // Collect availability
+        const days = document.querySelectorAll('.avail-day')
+        const starts = document.querySelectorAll('.avail-start')
+        const ends = document.querySelectorAll('.avail-end')
+
+        const availabilityArray = []
+        days.forEach((el, i) => {
+          if (el.value !== '') {
+            availabilityArray.push({
+              day: el.value,
+              start: starts[i].value || '',
+              end: ends[i].value || '',
+            })
+          }
+        })
+
+        formData.append('availability', JSON.stringify(availabilityArray))
+
+        // Upload credentials
+        const credFiles = document.getElementById('credentials').files
+        for (let i = 0; i < credFiles.length; i++) {
+          formData.append('credentials', credFiles[i])
+        }
+
+        // Upload gallery
+        const galleryFiles = document.getElementById('gallery').files
+        for (let i = 0; i < galleryFiles.length; i++) {
+          formData.append('gallery', galleryFiles[i])
+        }
+
+        // Send to backend
+        try {
+          const res = await fetch('http://localhost:5050/worker/profile', {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          })
+
+          const data = await res.json()
+
+          if (!res.ok) {
+            msg.style.color = 'red'
+            msg.innerHTML = data.message || 'Error updating profile'
+            return
+          }
+
+          msg.style.color = 'green'
+          msg.innerHTML = 'Worker profile updated successfully!'
+        } catch (error) {
+          msg.style.color = 'red'
+          msg.innerHTML = 'Error: ' + error.message
+        }
+      }
+    </script>
+  </body>
+</html>
