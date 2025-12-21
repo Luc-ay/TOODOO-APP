@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, required: true, unique: true, index: true },
     gender: { type: String, enum: ['Male', 'Female'], required: true },
     password: { type: String, required: true },
+    walletBalance: { type: Number, default: 0 },
     role: {
       type: String,
       enum: ['hirer', 'worker'],

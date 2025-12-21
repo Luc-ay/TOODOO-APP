@@ -28,6 +28,7 @@ const bookingSchema = new mongoose.Schema(
       enum: ['unpaid', 'paid'],
       default: 'unpaid',
     },
+    escrowAmount: { type: Number, default: 0 },
   },
   { timestamps: true }
 )
