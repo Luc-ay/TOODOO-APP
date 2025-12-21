@@ -70,7 +70,7 @@ export const updateWorkerProfile = async (req, res) => {
       try {
         const parsedSkills = JSON.parse(req.body.skills)
         if (Array.isArray(parsedSkills)) {
-          profile.skills = parsedSkills // overwrite completely
+          profile.skills = parsedSkills
         }
       } catch (err) {
         console.log('Invalid skills JSON')
