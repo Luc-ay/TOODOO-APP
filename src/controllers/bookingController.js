@@ -26,9 +26,6 @@ export const createBooking = async (req, res) => {
       })
     }
 
-    hirer.walletBalance -= totalCost
-    await hirer.save()
-
     const booking = await Booking.create({
       hirerId: req.user.id,
       workerId,
@@ -42,16 +39,24 @@ export const createBooking = async (req, res) => {
       paymentStatus: 'paid',
     })
 
-    await Transaction.create({
+    hirer.walletBalance -= totalCost
+    await hirer.save()
+
+    res.status(201).json({
+      message: 'Booking created successfully',
+      booking,
+    })
+    Transaction.create({
       userId: hirer._id,
       type: 'payment',
       amount: totalCost,
       status: 'completed',
     })
-
-    res.status(201).json({
-      message: 'Booking created successfully',
-      booking,
+    Transaction.create({
+      userId: workerId,
+      type: 'payment',
+      amount: totalCost,
+      status: 'pending',
     })
   } catch (error) {
     res.status(500).json({ message: error.message })
@@ -61,7 +66,7 @@ export const createBooking = async (req, res) => {
 export const getHirerBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ hirerId: req.user.id })
-      .populate('workerId', 'fullName email phone')
+      .populate('workerId', 'fullName email phone status')
       .sort({ createdAt: -1 })
 
     res.status(200).json(bookings)
@@ -85,7 +90,7 @@ export const getWorkerBookings = async (req, res) => {
 export const getBookingById = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id)
-      .populate('hirerId', 'fullName phone')
+      .populate('hirerId', 'fullName phone status')
       .populate('workerId', 'fullName phone')
 
     if (!booking) {
