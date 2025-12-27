@@ -1,8 +1,7 @@
 import express from 'express'
 import {
   createBooking,
-  getHirerBookings,
-  getWorkerBookings,
+  getMyBookings,
   getBookingById,
   updateBookingStatus,
   cancelBooking,
@@ -12,8 +11,12 @@ import { authorizeRoles, verifyToken } from '../middleware/auth.js'
 const router = express.Router()
 
 router.post('/', verifyToken, authorizeRoles('hirer'), createBooking)
-router.get('/hirer', verifyToken, authorizeRoles('hirer'), getHirerBookings)
-router.get('/worker', verifyToken, authorizeRoles('worker'), getWorkerBookings)
+router.get(
+  '/my-bookings',
+  verifyToken,
+  authorizeRoles('hirer', 'worker'),
+  getMyBookings
+)
 router.get('/:id', verifyToken, getBookingById)
 router.patch(
   '/:id/status',
