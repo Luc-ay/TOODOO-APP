@@ -4,21 +4,19 @@ import {
   changePassword,
   checktoken,
   passwordOTP,
-  hirer_register,
+  register,
   login,
   verifyPasswordCode,
   verifyOtp,
-  worker_register,
 } from '../controllers/auth.controller.js'
 import { verifyToken } from '../middleware/auth.js'
 
 const router = express.Router()
 
-router.post('/register', hirer_register)
+router.post('/register', register)
 router.post('/login', login)
-router.post('/otp/verify', verifyOtp)
-router.post('/forget-password', passwordOTP)
-router.post('/change-password', changePassword)
+router.post('/verify-otp', verifyOtp)
+router.post('/forgot-password', passwordOTP)
+router.post('/reset-password', changePassword)
 router.post('/verify-passcode', verifyPasswordCode)
-router.get('/verify', verifyToken, checktoken)
 export default router

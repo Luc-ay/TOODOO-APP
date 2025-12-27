@@ -63,22 +63,28 @@ export const createBooking = async (req, res) => {
   }
 }
 
-export const getHirerBookings = async (req, res) => {
+export const getMyBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ hirerId: req.user.id })
-      .populate('workerId', 'fullName email phone status')
-      .sort({ createdAt: -1 })
+    const { id, role } = req.user
 
-    res.status(200).json(bookings)
-  } catch (error) {
-    res.status(500).json({ message: error.message })
-  }
-}
+    let query = {}
+    let populateField = ''
+    let populateSelect = ''
 
-export const getWorkerBookings = async (req, res) => {
-  try {
-    const bookings = await Booking.find({ workerId: req.user.id })
-      .populate('hirerId', 'fullName email phone')
+    if (role === 'hirer') {
+      query.hirerId = id
+      populateField = 'workerId'
+      populateSelect = 'fullName email phone status'
+    } else if (role === 'worker') {
+      query.workerId = id
+      populateField = 'hirerId'
+      populateSelect = 'fullName email phone'
+    } else {
+      return res.status(403).json({ message: 'Invalid role' })
+    }
+
+    const bookings = await Booking.find(query)
+      .populate(populateField, populateSelect)
       .sort({ createdAt: -1 })
 
     res.status(200).json(bookings)

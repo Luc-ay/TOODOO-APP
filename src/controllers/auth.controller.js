@@ -7,7 +7,7 @@ import WorkerProfile from '../models/Worker.Profile.js'
 
 export const register = async (req, res) => {
   try {
-    const { type } = req.query // artisan | client
+    const { type } = req.query
 
     const {
       fullName,
@@ -207,12 +207,6 @@ export const verifyOtp = async (req, res) => {
       .status(500)
       .json({ message: 'Internal server error', error: error.message })
   }
-}
-
-export const checktoken = async (req, res) => {
-  return res.status(200).json({
-    Message: 'It worked',
-  })
 }
 
 export const passwordOTP = async (req, res) => {
