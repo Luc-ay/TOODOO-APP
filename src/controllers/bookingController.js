@@ -1,6 +1,7 @@
 import Booking from '../models/Bookings.js'
 import User from '../models/User.js'
 import Transaction from '../models/Transaction.js'
+import Review from '../models/Review.js'
 
 export const createBooking = async (req, res) => {
   try {
@@ -172,6 +173,23 @@ export const cancelBooking = async (req, res) => {
       message: 'Booking cancelled successfully',
       refundedAmount: refundAmount,
     })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+export const getBookingReview = async (req, res) => {
+  try {
+    const review = await Review.findOne({
+      bookingId: req.params.id,
+      workerId: req.user.id,
+    })
+
+    if (!review) {
+      return res.status(404).json({ message: 'No review yet' })
+    }
+
+    res.status(200).json(review)
   } catch (error) {
     res.status(500).json({ message: error.message })
   }

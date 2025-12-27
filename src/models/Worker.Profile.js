@@ -7,7 +7,11 @@ const workerProfileSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
-    serviceType: { type: String, required: true },
+    serviceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Service',
+      required: true,
+    },
     skills: [{ name: String, years: Number }],
     bio: String,
     credentials: [String],

@@ -4,6 +4,7 @@ import {
   getMyBookings,
   getBookingById,
   updateBookingStatus,
+  getBookingReview,
   cancelBooking,
 } from '../controllers/bookingController.js'
 import { authorizeRoles, verifyToken } from '../middleware/auth.js'
@@ -25,5 +26,6 @@ router.patch(
   updateBookingStatus
 )
 router.patch('/:id/cancel', verifyToken, authorizeRoles('hirer'), cancelBooking)
+router.get('/:id/review', verifyToken, getBookingReview)
 
 export default router
