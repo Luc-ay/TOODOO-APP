@@ -5,61 +5,10 @@ import VerificationCode from '../models/Verify-user.js'
 import { sendVerificationEmail } from '../utils/sendVerificationEmail.js'
 import WorkerProfile from '../models/Worker.Profile.js'
 
-export const hirer_register = async (req, res) => {
+export const register = async (req, res) => {
   try {
-    const { fullName, email, phone, password, gender } = req.body
+    const { type } = req.query // artisan | client
 
-    if (!fullName || !email || !phone || !password || !gender) {
-      return res.status(400).json({
-        Message: 'All field is required',
-      })
-    }
-    if (phone.length !== 10) {
-      return res.status(400).json({
-        Message: 'Phone must be exactly 10 digits',
-      })
-    }
-
-    const hashPWD = await bcrypt.hash(password, 7)
-    const role = 'hirer'
-    const createUser = new User({
-      fullName,
-      email,
-      phone,
-      password: hashPWD,
-      gender,
-      role,
-    })
-
-    await createUser.save()
-
-    createUser.password = undefined
-
-    res.status(201).json({
-      message: 'User registered successfully. Verification code sent to email.',
-      User: createUser,
-    })
-
-    sendVerificationEmail(email, fullName).catch(console.error)
-  } catch (error) {
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyValue)[0]
-      const value = error.keyValue[field]
-
-      return res.status(400).json({
-        message: `User with this ${field} (${value}) already exists.`,
-      })
-    }
-
-    console.error(error)
-    res
-      .status(500)
-      .json({ message: 'Internal server error', error: error.message })
-  }
-}
-
-export const worker_register = async (req, res) => {
-  try {
     const {
       fullName,
       email,
@@ -73,20 +22,29 @@ export const worker_register = async (req, res) => {
       availability,
     } = req.body
 
-    if (!fullName || !email || !phone || !password || !gender) {
+    if (!type || !['artisan', 'client'].includes(type)) {
       return res.status(400).json({
-        Message: 'All field is required',
-      })
-    }
-    if (phone.length !== 10) {
-      return res.status(400).json({
-        Message: 'Phone must be exactly 10 digits',
+        message: 'Invalid or missing user type',
       })
     }
 
+    if (!fullName || !email || !phone || !password || !gender) {
+      return res.status(400).json({
+        message: 'All fields are required',
+      })
+    }
+
+    if (phone.length !== 10) {
+      return res.status(400).json({
+        message: 'Phone must be exactly 10 digits',
+      })
+    }
+
+    const role = type === 'artisan' ? 'worker' : 'hirer'
+
     const hashPWD = await bcrypt.hash(password, 7)
-    const role = 'worker'
-    const createUser = new User({
+
+    const user = new User({
       fullName,
       email,
       phone,
@@ -95,26 +53,28 @@ export const worker_register = async (req, res) => {
       role,
     })
 
-    const savedUser = await createUser.save()
+    const savedUser = await user.save()
+    user.password = undefined
 
-    createUser.password = undefined
+    if (role === 'worker') {
+      const workerProfile = new WorkerProfile({
+        user: savedUser._id,
+        bio,
+        serviceType,
+        skills: skills || [],
+        hourlyRate,
+        availability: availability || [],
+      })
 
-    const worker = new WorkerProfile({
-      user: savedUser._id,
-      bio,
-      serviceType,
-      skills: skills || [],
-      hourlyRate,
-      availability: availability || [],
-    })
+      await workerProfile.save()
+    }
 
-    await worker.save()
     res.status(201).json({
       message: 'User registered successfully. Verification code sent to email.',
-      User: createUser,
+      user,
     })
 
-    sendVerificationEmail(email, fullName)
+    sendVerificationEmail(email, fullName).catch(console.error)
   } catch (error) {
     if (error.code === 11000) {
       const field = Object.keys(error.keyValue)[0]
@@ -124,6 +84,11 @@ export const worker_register = async (req, res) => {
         message: `User with this ${field} (${value}) already exists.`,
       })
     }
+    console.error(error)
+    res.status(500).json({
+      message: 'Internal server error',
+      error: error.message,
+    })
   }
 }
 

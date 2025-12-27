@@ -14,8 +14,7 @@ import { verifyToken } from '../middleware/auth.js'
 
 const router = express.Router()
 
-router.post('/register-hirer', hirer_register)
-router.post('/register-worker', worker_register)
+router.post('/register', hirer_register)
 router.post('/login', login)
 router.post('/otp/verify', verifyOtp)
 router.post('/forget-password', passwordOTP)

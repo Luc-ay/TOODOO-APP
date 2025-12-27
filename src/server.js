@@ -35,9 +35,9 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')))
 app.use(express.static('frontend'))
 app.use(morgan('dev'))
 
-app.use('/auth', authRouter)
-app.use('/hirer', hirerRouter)
-app.use('/worker', workerRoute)
+app.use('/api/auth', authRouter)
+app.use('/api/hirer', hirerRouter)
+app.use('/api/worker', workerRoute)
 
 app.use(express.static(path.join(__dirname, 'frontend')))
 const PORT = process.env.PORT | 5000
